@@ -10,15 +10,14 @@
     },
     "params": {
         "target_account": [
-            "jeepmutou@gmail.com",
-            "hellomutou@gmail.com"
+            "jiayunpeng1@huawei.com"
+        ],
+        "exclude_emails": [
+            "huawei.com"
         ],
         "past_hours": 24,
         "max_emails": 500,
-        "retention_hours": 720,
-        "exclude_emails": [
-            "gmail.com"
-        ]
+        "retention_hours": 720
     },
     "enabled": false
 }

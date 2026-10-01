@@ -227,45 +227,51 @@ class DynamicForm(QWidget):
                 
                 list_items = []
                 
-                def add_item(val=None, text_override=None):
-                    text = text_override if text_override is not None else txt_input.text().strip()
-                    if not text:
-                        return
-                    for item in list_items:
-                        if item["value"] == text:
-                            txt_input.clear()
+                def create_add_item(l_items, t_input, c_layout):
+                    def add_item(val=None, text_override=None):
+                        text = text_override if text_override is not None else t_input.text().strip()
+                        if not text:
                             return
+                        for item in l_items:
+                            if item["value"] == text:
+                                t_input.clear()
+                                return
+                                
+                        row_widget = QWidget()
+                        row_layout = QHBoxLayout(row_widget)
+                        row_layout.setContentsMargins(0, 0, 0, 0)
+                        
+                        chk = QCheckBox(text)
+                        chk.setChecked(True)
+                        
+                        btn_del = QPushButton("x")
+                        btn_del.setFixedWidth(24)
+                        btn_del.setStyleSheet("QPushButton { border: none; color: red; font-weight: bold; } QPushButton:hover { background: #fee; }")
+                        
+                        row_layout.addWidget(chk)
+                        row_layout.addStretch()
+                        row_layout.addWidget(btn_del)
+                        
+                        c_layout.addWidget(row_widget)
+                        
+                        item_data = {"checkbox": chk, "widget": row_widget, "value": text}
+                        l_items.append(item_data)
+                        
+                        def delete_item(checked=False, i_data=item_data):
+                            if i_data in l_items:
+                                l_items.remove(i_data)
+                            i_data["widget"].deleteLater()
                             
-                    row_widget = QWidget()
-                    row_layout = QHBoxLayout(row_widget)
-                    row_layout.setContentsMargins(0, 0, 0, 0)
-                    
-                    chk = QCheckBox(text)
-                    chk.setChecked(True)
-                    
-                    btn_del = QPushButton("x")
-                    btn_del.setFixedWidth(24)
-                    btn_del.setStyleSheet("QPushButton { border: none; color: red; font-weight: bold; } QPushButton:hover { background: #fee; }")
-                    
-                    row_layout.addWidget(chk)
-                    row_layout.addStretch()
-                    row_layout.addWidget(btn_del)
-                    
-                    container_layout.addWidget(row_widget)
-                    
-                    item_data = {"checkbox": chk, "widget": row_widget, "value": text}
-                    list_items.append(item_data)
-                    
-                    def delete_item(checked=False, i_data=item_data):
-                        list_items.remove(i_data)
-                        i_data["widget"].deleteLater()
+                        btn_del.clicked.connect(delete_item)
+                        if text_override is None:
+                            t_input.clear()
+                    return add_item
+                
+                add_item = create_add_item(list_items, txt_input, container_layout)
+
                         
-                    btn_del.clicked.connect(delete_item)
-                    if text_override is None:
-                        txt_input.clear()
-                        
-                btn_add.clicked.connect(lambda: add_item())
-                txt_input.returnPressed.connect(lambda: add_item())
+                btn_add.clicked.connect(add_item)
+                txt_input.returnPressed.connect(add_item)
                 
                 saved_list = current_value if isinstance(current_value, list) else []
                 if isinstance(saved_list, str):
