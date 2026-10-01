@@ -1,0 +1,4 @@
+PySide6
+APScheduler
+pywin32
+openpyxl
