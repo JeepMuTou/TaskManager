@@ -2,108 +2,220 @@ import os
 import subprocess
 import json
 import sys
+import threading
+import queue
+import time
 from pathlib import Path
 from typing import List, Dict, Any
 
 class TaskManager:
-    def __init__(self, tasks_dir: str):
+    def __init__(self, tasks_dir: str, settings_store):
         self.tasks_dir = Path(tasks_dir)
+        self.settings_store = settings_store
         self.running_processes = {}
+        self.config_processes = {}
+        
+        self.task_queue = queue.Queue()
+        self.queue_thread = threading.Thread(target=self._process_queue, daemon=True)
+        self.queue_thread.start()
+        
+        self.monitor_thread = threading.Thread(target=self._monitor_timeouts, daemon=True)
+        self.monitor_thread.start()
+
+    def _process_queue(self):
+        while True:
+            task_id, params = self.task_queue.get()
+            
+            # 如果不允许并行，我们需要等待当前所有正在运行的任务结束
+            while not self.settings_store.allow_parallel_tasks:
+                self._cleanup_dead_processes()
+                if len(self.running_processes) > 0:
+                    time.sleep(0.5)
+                else:
+                    break
+                    
+            self._do_execute(task_id, params)
+            self.task_queue.task_done()
+
+    def _cleanup_dead_processes(self):
+        dead = []
+        for tid, info in self.running_processes.items():
+            if info["proc"].poll() is not None:
+                dead.append(tid)
+        for tid in dead:
+            del self.running_processes[tid]
+
+    def _monitor_timeouts(self):
+        while True:
+            try:
+                now = time.time()
+                killed = []
+                # 遍历拷贝避免修改期间迭代冲突
+                for tid, info in list(self.running_processes.items()):
+                    if info["timeout_seconds"] > 0:
+                        elapsed = now - info["start_time"]
+                        if elapsed > info["timeout_seconds"]:
+                            proc = info["proc"]
+                            if proc.poll() is None:
+                                try:
+                                    proc.kill()
+                                    print(f"Task {tid} killed due to timeout (> {info['timeout_seconds']}s)")
+                                except Exception as e:
+                                    print(f"Failed to kill timed-out task {tid}: {e}")
+                            killed.append(tid)
+                for tid in killed:
+                    if tid in self.running_processes:
+                        del self.running_processes[tid]
+            except Exception as e:
+                print(f"Error in timeout monitor: {e}")
+            time.sleep(1)
 
     def scan_tasks(self) -> List[Dict[str, Any]]:
-        """扫描 tasks_dir 下的子目录，寻找 schema.json 配置文件"""
         tasks = []
         if not self.tasks_dir.exists():
             return tasks
 
         for item in self.tasks_dir.iterdir():
             if item.is_dir():
-                schema_file = item / "UI" / "schema.json"
-                if schema_file.exists():
-                    schema = self._get_task_schema(schema_file)
-                    if schema:
-                        # 补充一个内部的 task_id 字段 (使用文件夹名称)
-                        schema['task_id'] = item.name
-                        tasks.append(schema)
+                metadata_file = item / "metadata.json"
+                if metadata_file.exists():
+                    metadata = self._get_task_metadata(metadata_file)
+                    metadata['task_id'] = item.name
+                    tasks.append(metadata)
+                else:
+                    tasks.append({
+                        "task_id": item.name,
+                        "name": item.name,
+                        "description": "No description provided."
+                    })
         return tasks
 
-    def _get_task_schema(self, schema_file: Path) -> Dict[str, Any]:
-        """读取任务的 schema.json"""
+    def _get_task_metadata(self, metadata_file: Path) -> Dict[str, Any]:
         try:
-            with open(schema_file, 'r', encoding='utf-8') as f:
+            with open(metadata_file, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except Exception as e:
-            print(f"读取 {schema_file} schema 失败: {e}")
-            return {}
+            print(f"Failed to read metadata {metadata_file}: {e}")
+            return {"name": metadata_file.parent.name, "description": ""}
 
-    def execute_task(self, task_id: str, params: dict):
-        """执行指定任务，这通常由 Scheduler 调用"""
+    def _get_python_exe(self):
+        """获取用于执行插件的 Python 解释器路径，优先使用自带的绿色环境"""
+        # 1. 确定程序根目录
+        if getattr(sys, 'frozen', False):
+            # 编译为 EXE 时的根目录
+            root_dir = Path(sys.executable).parent
+        else:
+            # 源码运行时的根目录 (假定 task_manager.py 在 Source/app/core/ 下)
+            root_dir = Path(__file__).parent.parent.parent
+            
+        # 2. 检查几种常见的自带 Python 环境路径
+        possible_envs = [
+            root_dir / "python_env" / "python.exe",            # 常见绿色版命名
+            root_dir / "env" / "Scripts" / "python.exe",       # 标准 venv 命名1
+            root_dir / ".venv" / "Scripts" / "python.exe"      # 标准 venv 命名2
+        ]
+        
+        for env_exe in possible_envs:
+            if env_exe.exists():
+                print(f"Detected portable Python environment: {env_exe}")
+                return str(env_exe)
+
+        # 3. 如果没找到自带环境，则回退到系统环境
+        if getattr(sys, 'frozen', False):
+            return "python"
+        return sys.executable
+
+    def execute_task(self, task_id: str, params: dict = None):
+        self.task_queue.put((task_id, params))
+        print(f"Task {task_id} queued for execution.")
+
+    def _do_execute(self, task_id: str, params: dict = None):
         task_dir = self.tasks_dir / task_id
         script_path = task_dir / "run.py"
         if not script_path.exists():
             print(f"Task script not found: {script_path}")
             return
 
+        config_path = task_dir / "config.json"
+        # 默认开启超时强杀，时间为10分钟
+        timeout_seconds = 10 * 60
+        if config_path.exists():
+            try:
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    cfg = json.load(f)
+                    if cfg.get("timeout_enabled", True):
+                        timeout_seconds = cfg.get("timeout_minutes", 10) * 60
+                    else:
+                        timeout_seconds = 0
+            except:
+                pass
+
         try:
-            python_exe = sys.executable
-            # 异步执行，不阻塞主程序
-            # Windows 下可以使用 CREATE_NO_WINDOW 避免弹出黑框
-            creationflags = 0
-            if sys.platform == "win32":
-                creationflags = subprocess.CREATE_NO_WINDOW
+            python_exe = self._get_python_exe()
+            creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
 
             proc = subprocess.Popen(
                 [python_exe, "run.py"],
                 cwd=str(task_dir),
                 creationflags=creationflags
             )
-            self.running_processes[task_id] = proc
-            print(f"已启动任务: {task_id}")
+            self.running_processes[task_id] = {
+                "proc": proc,
+                "start_time": time.time(),
+                "timeout_seconds": timeout_seconds
+            }
+            print(f"Started task: {task_id}")
         except Exception as e:
-            print(f"启动任务 {task_id} 失败: {e}")
+            print(f"Failed to start task {task_id}: {e}")
 
     def is_task_running(self, task_id: str) -> bool:
-        """检查特定任务是否仍在运行"""
-        proc = self.running_processes.get(task_id)
-        if proc is None:
-            return False
-            
-        if proc.poll() is None:
-            # 进程仍在运行
+        self._cleanup_dead_processes()
+        if task_id in self.running_processes:
             return True
-        else:
-            # 进程已结束，清理记录
-            del self.running_processes[task_id]
-            return False
+        
+        # 检查是否在队列中排队
+        for item in list(self.task_queue.queue):
+            if item[0] == task_id:
+                return True
+                
+        return False
 
-    def get_dynamic_options(self, task_id: str, param_name: str) -> List[str]:
-        """向特定脚本请求动态选项列表"""
+    def kill_task(self, task_id: str):
+        # 1. 如果还在队列中，踢出队列
+        new_queue = queue.Queue()
+        while not self.task_queue.empty():
+            item = self.task_queue.get()
+            if item[0] != task_id:
+                new_queue.put(item)
+        self.task_queue = new_queue
+
+        # 2. 如果已经运行，直接杀死进程
+        info = self.running_processes.get(task_id)
+        if info is not None:
+            proc = info["proc"]
+            if proc.poll() is None:
+                try:
+                    proc.kill()
+                    print(f"Killed task: {task_id}")
+                except Exception as e:
+                    print(f"Failed to kill task {task_id}: {e}")
+            if task_id in self.running_processes:
+                del self.running_processes[task_id]
+
+    def open_task_config(self, task_id: str):
         task_dir = self.tasks_dir / task_id
-        script_path = task_dir / "UI" / "api.py"
+        script_path = task_dir / "config_ui.py"
         if not script_path.exists():
-            return []
-            
+            print(f"Config UI script not found: {script_path}")
+            return
+
         try:
-            python_exe = sys.executable
-            # 允许适当长一点的时间 (如 10 秒) 以防 Outlook 卡顿
-            result = subprocess.run(
-                [python_exe, "UI/api.py", "--get-options", param_name],
-                cwd=str(task_dir),
-                capture_output=True,
-                text=True,
-                timeout=10,
-                check=True
+            python_exe = self._get_python_exe()
+            proc = subprocess.Popen(
+                [python_exe, "config_ui.py"],
+                cwd=str(task_dir)
             )
-            output = result.stdout.strip()
-            # 尝试解析最后有效 JSON
-            lines = output.split('\n')
-            for line in reversed(lines):
-                if line.startswith('[') and line.endswith(']'):
-                    return json.loads(line)
-            return json.loads(output)
-        except subprocess.TimeoutExpired:
-            print(f"获取选项超时: {param_name}")
-            return []
+            self.config_processes[task_id] = proc
+            print(f"Opened config UI for task: {task_id}")
         except Exception as e:
-            print(f"获取动态选项失败 {task_id}.{param_name}: {e}")
-            return []
+            print(f"Failed to open config UI for task {task_id}: {e}")

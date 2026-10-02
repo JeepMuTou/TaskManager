@@ -1,135 +1,154 @@
 
-[2026-10-01 12:46:09] 开始读取邮箱 [jeepmutou@gmail.com] 全目录 ...
-  - [Inbox][接收][2026-10-01 12:42:43] Michael Spencer from AI Supremacy  <aisupremacy+siphon@substack.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | AI Frontier: Google Gemini-4 Argon
-  - [Inbox][发送][2026-10-01 10:33:08] Microsoft Outlook <jeepmutou@gmail.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | Microsoft Outlook Test Message
-  - [Inbox][接收][2026-10-01 10:13:07] Google <no-reply@accounts.google.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | hellomutou@gmail.com 的安全提醒
-  - [Inbox][发送][2026-10-01 10:12:51] Microsoft Outlook <jeepmutou@gmail.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | Microsoft Outlook Test Message
-  - [Inbox][接收][2026-10-01 10:12:49] Google <no-reply@accounts.google.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | 安全提醒
-  - [Inbox][接收][2026-10-01 10:02:36] Google <no-reply@accounts.google.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | hellomutou@gmail.com 的安全提醒
-  - [Inbox][接收][2026-10-01 09:59:20] Google <no-reply@accounts.google.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | 安全提醒
-  - [Inbox][接收][2026-09-30 23:53:22] ColoCrossing <sales@colocrossing.com> -> Jeep <jeepmutou@gmail.com> | ColoConnect September Newsletter
-  - [垃圾邮件][接收][2026-10-01 11:09:50] hellomutou@gmail.com <hellomutou@gmail.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | test
-  -> [jeepmutou@gmail.com] 读取完成，共拉取 9 封。
+[2026-10-02 11:13:56] 开始读取邮箱 [jeepmutou@gmail.com] 全目录 ...
+  -> [jeepmutou@gmail.com] 读取完成，共拉取 8 封。
 
-[2026-10-01 12:46:10] 开始读取邮箱 [hellomutou@gmail.com] 全目录 ...
-  - [Inbox][发送][2026-10-01 10:33:14] Microsoft Outlook <hellomutou@gmail.com> -> hellomutou@gmail.com <hellomutou@gmail.com> | Microsoft Outlook Test Message
-  - [Inbox][发送][2026-10-01 10:13:07] Microsoft Outlook <hellomutou@gmail.com> -> hellomutou@gmail.com <hellomutou@gmail.com> | Microsoft Outlook Test Message
-  - [Inbox][接收][2026-10-01 10:13:07] Google <no-reply@accounts.google.com> -> hellomutou@gmail.com <hellomutou@gmail.com> | 安全提醒
-  - [Inbox][接收][2026-10-01 10:02:36] Google <no-reply@accounts.google.com> -> hellomutou@gmail.com <hellomutou@gmail.com> | 安全提醒
-  - [Sent Mail][发送][2026-10-01 11:09:49] hellomutou@gmail.com <hellomutou@gmail.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | test
-  -> [hellomutou@gmail.com] 读取完成，共拉取 5 封。
-
-[2026-10-01 12:46:14] 开始读取邮箱 [jeepmutou@gmail.com] 全目录 ...
-  -> [jeepmutou@gmail.com] 读取完成，共拉取 0 封。
-
-[2026-10-01 12:46:15] 开始读取邮箱 [hellomutou@gmail.com] 全目录 ...
+[2026-10-02 11:13:57] 开始读取邮箱 [hellomutou@gmail.com] 全目录 ...
   -> [hellomutou@gmail.com] 读取完成，共拉取 0 封。
+\n[完毕] 成功应用回复匹配状态机，共写入 8 条记录。\n
+[2026-10-02 12:33:04] 开始读取邮箱 [jeepmutou@gmail.com] 全目录 ...
+  -> [jeepmutou@gmail.com] 读取完成，共拉取 8 封。
 
-[2026-10-01 12:46:19] 开始读取邮箱 [jeepmutou@gmail.com] 全目录 ...
-  -> [jeepmutou@gmail.com] 读取完成，共拉取 0 封。
-
-[2026-10-01 12:46:19] 开始读取邮箱 [hellomutou@gmail.com] 全目录 ...
+[2026-10-02 12:33:04] 开始读取邮箱 [hellomutou@gmail.com] 全目录 ...
   -> [hellomutou@gmail.com] 读取完成，共拉取 0 封。
+读取邮件时发生严重异常:
+Traceback (most recent call last):
+  File "E:\AIProject\Antigravity\2026_10_02_TaskManager\Source\tasks\outlook_reader\run.py", line 377, in run_task
+    wb.save(excel_file)
+    ~~~~~~~^^^^^^^^^^^^
+  File "C:\Python314\Lib\site-packages\openpyxl\workbook\workbook.py", line 386, in save
+    save_workbook(self, filename)
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\site-packages\openpyxl\writer\excel.py", line 291, in save_workbook
+    archive = ZipFile(filename, 'w', ZIP_DEFLATED, allowZip64=True)
+  File "C:\Python314\Lib\zipfile\__init__.py", line 1462, in __init__
+    self.fp = io.open(file, filemode)
+              ~~~~~~~^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: 'data/OriginalMail.xlsx'
 
-[2026-10-01 12:51:45] 开始读取邮箱 [jeepmutou@gmail.com] 全目录 ...
-  -> [jeepmutou@gmail.com] 读取完成，共拉取 0 封。
 
-[2026-10-01 12:51:45] 开始读取邮箱 [hellomutou@gmail.com] 全目录 ...
+[2026-10-02 12:33:30] 开始读取邮箱 [jeepmutou@gmail.com] 全目录 ...
+  -> [jeepmutou@gmail.com] 读取完成，共拉取 8 封。
+
+[2026-10-02 12:33:30] 开始读取邮箱 [hellomutou@gmail.com] 全目录 ...
   -> [hellomutou@gmail.com] 读取完成，共拉取 0 封。
+\n[完毕] 成功应用回复匹配状态机，共写入 8 条记录。\n
+[2026-10-02 12:50:07] 开始读取邮箱 [jeepmutou@gmail.com] 全目录 ...
+  -> [jeepmutou@gmail.com] 读取完成，共拉取 8 封。
 
-[2026-10-01 12:51:50] 开始读取邮箱 [jeepmutou@gmail.com] 全目录 ...
-  -> [jeepmutou@gmail.com] 读取完成，共拉取 0 封。
-
-[2026-10-01 12:51:50] 开始读取邮箱 [hellomutou@gmail.com] 全目录 ...
+[2026-10-02 12:50:08] 开始读取邮箱 [hellomutou@gmail.com] 全目录 ...
   -> [hellomutou@gmail.com] 读取完成，共拉取 0 封。
+\n[完毕] 成功应用回复匹配状态机，共写入 8 条记录。\n
+[2026-10-02 12:51:11] 开始读取邮箱 [jeepmutou@gmail.com] 全目录 ...
+  -> [jeepmutou@gmail.com] 读取完成，共拉取 19 封。
 
-[2026-10-01 13:11:04] 开始读取邮箱 [['jeepmutou@gmail.com'] 全目录 ...
-  -> 未找到该邮箱账户，跳过。
-
-[2026-10-01 13:11:04] 开始读取邮箱 ['hellomutou@gmail.com']] 全目录 ...
-  -> 未找到该邮箱账户，跳过。
-
-[2026-10-01 13:32:16] 开始读取邮箱 [jeepmutou@gmail.com] 全目录 ...
-  - [Inbox][接收][2026-10-01 12:42:43] Michael Spencer from AI Supremacy  <aisupremacy+siphon@substack.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | AI Frontier: Google Gemini-4 Argon
-  - [Inbox][发送][2026-10-01 10:33:08] Microsoft Outlook <jeepmutou@gmail.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | Microsoft Outlook Test Message
-  - [Inbox][接收][2026-10-01 10:13:07] Google <no-reply@accounts.google.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | hellomutou@gmail.com 的安全提醒
-  - [Inbox][发送][2026-10-01 10:12:51] Microsoft Outlook <jeepmutou@gmail.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | Microsoft Outlook Test Message
-  - [Inbox][接收][2026-10-01 10:12:49] Google <no-reply@accounts.google.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | 安全提醒
-  - [Inbox][接收][2026-10-01 10:02:36] Google <no-reply@accounts.google.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | hellomutou@gmail.com 的安全提醒
-  - [Inbox][接收][2026-10-01 09:59:20] Google <no-reply@accounts.google.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | 安全提醒
-  - [Inbox][接收][2026-09-30 23:53:22] ColoCrossing <sales@colocrossing.com> -> Jeep <jeepmutou@gmail.com> | ColoConnect September Newsletter
-  - [垃圾邮件][接收][2026-10-01 11:09:50] hellomutou@gmail.com <hellomutou@gmail.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | test
-  -> [jeepmutou@gmail.com] 读取完成，共拉取 9 封。
-
-[2026-10-01 13:32:16] 开始读取邮箱 [hellomutou@gmail.com] 全目录 ...
-  - [Inbox][发送][2026-10-01 10:33:14] Microsoft Outlook <hellomutou@gmail.com> -> hellomutou@gmail.com <hellomutou@gmail.com> | Microsoft Outlook Test Message
-  - [Inbox][发送][2026-10-01 10:13:07] Microsoft Outlook <hellomutou@gmail.com> -> hellomutou@gmail.com <hellomutou@gmail.com> | Microsoft Outlook Test Message
-  - [Inbox][接收][2026-10-01 10:13:07] Google <no-reply@accounts.google.com> -> hellomutou@gmail.com <hellomutou@gmail.com> | 安全提醒
-  - [Inbox][接收][2026-10-01 10:02:36] Google <no-reply@accounts.google.com> -> hellomutou@gmail.com <hellomutou@gmail.com> | 安全提醒
-  - [Sent Mail][发送][2026-10-01 11:09:49] hellomutou@gmail.com <hellomutou@gmail.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | test
-  -> [hellomutou@gmail.com] 读取完成，共拉取 5 封。
-
-[2026-10-01 13:32:26] 开始读取邮箱 [jeepmutou@gmail.com] 全目录 ...
-  - [Inbox][接收][2026-10-01 12:42:43] Michael Spencer from AI Supremacy  <aisupremacy+siphon@substack.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | AI Frontier: Google Gemini-4 Argon
-  - [Inbox][发送][2026-10-01 10:33:08] Microsoft Outlook <jeepmutou@gmail.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | Microsoft Outlook Test Message
-  - [Inbox][接收][2026-10-01 10:13:07] Google <no-reply@accounts.google.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | hellomutou@gmail.com 的安全提醒
-  - [Inbox][发送][2026-10-01 10:12:51] Microsoft Outlook <jeepmutou@gmail.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | Microsoft Outlook Test Message
-  - [Inbox][接收][2026-10-01 10:12:49] Google <no-reply@accounts.google.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | 安全提醒
-  - [Inbox][接收][2026-10-01 10:02:36] Google <no-reply@accounts.google.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | hellomutou@gmail.com 的安全提醒
-  - [Inbox][接收][2026-10-01 09:59:20] Google <no-reply@accounts.google.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | 安全提醒
-  - [Inbox][接收][2026-09-30 23:53:22] ColoCrossing <sales@colocrossing.com> -> Jeep <jeepmutou@gmail.com> | ColoConnect September Newsletter
-  - [垃圾邮件][接收][2026-10-01 11:09:50] hellomutou@gmail.com <hellomutou@gmail.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | test
-  -> [jeepmutou@gmail.com] 读取完成，共拉取 9 封。
-
-[2026-10-01 13:32:26] 开始读取邮箱 [hellomutou@gmail.com] 全目录 ...
-  - [Inbox][发送][2026-10-01 10:33:14] Microsoft Outlook <hellomutou@gmail.com> -> hellomutou@gmail.com <hellomutou@gmail.com> | Microsoft Outlook Test Message
-  - [Inbox][发送][2026-10-01 10:13:07] Microsoft Outlook <hellomutou@gmail.com> -> hellomutou@gmail.com <hellomutou@gmail.com> | Microsoft Outlook Test Message
-  - [Inbox][接收][2026-10-01 10:13:07] Google <no-reply@accounts.google.com> -> hellomutou@gmail.com <hellomutou@gmail.com> | 安全提醒
-  - [Inbox][接收][2026-10-01 10:02:36] Google <no-reply@accounts.google.com> -> hellomutou@gmail.com <hellomutou@gmail.com> | 安全提醒
-  - [Sent Mail][发送][2026-10-01 11:09:49] hellomutou@gmail.com <hellomutou@gmail.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | test
-  -> [hellomutou@gmail.com] 读取完成，共拉取 5 封。
-
-[2026-10-01 13:33:20] 开始读取邮箱 [jeepmutou@gmail.com] 全目录 ...
-  - [Inbox][接收][2026-10-01 12:42:43] Michael Spencer from AI Supremacy  <aisupremacy+siphon@substack.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | AI Frontier: Google Gemini-4 Argon
-  - [Inbox][发送][2026-10-01 10:33:08] Microsoft Outlook <jeepmutou@gmail.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | Microsoft Outlook Test Message
-  - [Inbox][接收][2026-10-01 10:13:07] Google <no-reply@accounts.google.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | hellomutou@gmail.com 的安全提醒
-  - [Inbox][发送][2026-10-01 10:12:51] Microsoft Outlook <jeepmutou@gmail.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | Microsoft Outlook Test Message
-  - [Inbox][接收][2026-10-01 10:12:49] Google <no-reply@accounts.google.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | 安全提醒
-  - [Inbox][接收][2026-10-01 10:02:36] Google <no-reply@accounts.google.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | hellomutou@gmail.com 的安全提醒
-  - [Inbox][接收][2026-10-01 09:59:20] Google <no-reply@accounts.google.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | 安全提醒
-  - [Inbox][接收][2026-09-30 23:53:22] ColoCrossing <sales@colocrossing.com> -> Jeep <jeepmutou@gmail.com> | ColoConnect September Newsletter
-  - [垃圾邮件][接收][2026-10-01 11:09:50] hellomutou@gmail.com <hellomutou@gmail.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | test
-  -> [jeepmutou@gmail.com] 读取完成，共拉取 9 封。
-
-[2026-10-01 13:33:20] 开始读取邮箱 [hellomutou@gmail.com] 全目录 ...
-  - [Inbox][发送][2026-10-01 10:33:14] Microsoft Outlook <hellomutou@gmail.com> -> hellomutou@gmail.com <hellomutou@gmail.com> | Microsoft Outlook Test Message
-  - [Inbox][发送][2026-10-01 10:13:07] Microsoft Outlook <hellomutou@gmail.com> -> hellomutou@gmail.com <hellomutou@gmail.com> | Microsoft Outlook Test Message
-  - [Inbox][接收][2026-10-01 10:13:07] Google <no-reply@accounts.google.com> -> hellomutou@gmail.com <hellomutou@gmail.com> | 安全提醒
-  - [Inbox][接收][2026-10-01 10:02:36] Google <no-reply@accounts.google.com> -> hellomutou@gmail.com <hellomutou@gmail.com> | 安全提醒
-  - [Sent Mail][发送][2026-10-01 11:09:49] hellomutou@gmail.com <hellomutou@gmail.com> -> jeepmutou@gmail.com <jeepmutou@gmail.com> | test
-  -> [hellomutou@gmail.com] 读取完成，共拉取 5 封。
-
-[2026-10-01 13:33:25] 开始读取邮箱 [jeepmutou@gmail.com] 全目录 ...
-  -> [jeepmutou@gmail.com] 读取完成，共拉取 0 封。
-
-[2026-10-01 13:33:25] 开始读取邮箱 [hellomutou@gmail.com] 全目录 ...
-  -> [hellomutou@gmail.com] 读取完成，共拉取 0 封。
-
-[2026-10-01 13:56:15] 开始读取邮箱 [jeepmutou@gmail.com] 全目录 ...
-  -> [jeepmutou@gmail.com] 读取完成，共拉取 11 封。
-
-[2026-10-01 13:56:15] 开始读取邮箱 [hellomutou@gmail.com] 全目录 ...
+[2026-10-02 12:51:11] 开始读取邮箱 [hellomutou@gmail.com] 全目录 ...
   -> [hellomutou@gmail.com] 读取完成，共拉取 7 封。
-\n[完毕] 成功应用回复匹配状态机，共写入 14 条记录。\n
-[2026-10-01 13:58:30] 开始读取邮箱 [jeepmutou@gmail.com] 全目录 ...
-  -> [jeepmutou@gmail.com] 读取完成，共拉取 11 封。
+\n[完毕] 成功应用回复匹配状态机，共写入 22 条记录。\n
+[2026-10-02 13:05:59] 开始读取邮箱 [jeepmutou@gmail.com] 全目录 ...
+  -> [jeepmutou@gmail.com] 读取完成，共拉取 20 封。
 
-[2026-10-01 13:58:30] 开始读取邮箱 [hellomutou@gmail.com] 全目录 ...
+[2026-10-02 13:05:59] 开始读取邮箱 [hellomutou@gmail.com] 全目录 ...
   -> [hellomutou@gmail.com] 读取完成，共拉取 7 封。
-\n[完毕] 成功应用回复匹配状态机，共写入 14 条记录。\n
-[2026-10-01 14:02:56] 开始读取邮箱 [jeepmutou@gmail.com] 全目录 ...
-  -> [jeepmutou@gmail.com] 读取完成，共拉取 11 封。
+\n[完毕] 成功应用回复匹配状态机，共写入 23 条记录。\n
+[2026-10-02 13:10:14] 开始读取邮箱 [jeepmutou@gmail.com] 全目录 ...
+  -> [jeepmutou@gmail.com] 读取完成，共拉取 20 封。
 
-[2026-10-01 14:02:57] 开始读取邮箱 [hellomutou@gmail.com] 全目录 ...
+[2026-10-02 13:10:14] 开始读取邮箱 [hellomutou@gmail.com] 全目录 ...
   -> [hellomutou@gmail.com] 读取完成，共拉取 7 封。
-\n[完毕] 成功应用回复匹配状态机，共写入 14 条记录。\n
+\n[完毕] 成功应用回复匹配状态机，共写入 23 条记录。\n
+[2026-10-02 13:13:28] 开始读取邮箱 [jeepmutou@gmail.com] 全目录 ...
+  -> [jeepmutou@gmail.com] 读取完成，共拉取 20 封。
+
+[2026-10-02 13:13:28] 开始读取邮箱 [hellomutou@gmail.com] 全目录 ...
+  -> [hellomutou@gmail.com] 读取完成，共拉取 7 封。
+\n[完毕] 成功应用回复匹配状态机，共写入 23 条记录。\n
+[2026-10-02 13:14:27] 开始读取邮箱 [jeepmutou@gmail.com] 全目录 ...
+  -> [jeepmutou@gmail.com] 读取完成，共拉取 20 封。
+
+[2026-10-02 13:14:27] 开始读取邮箱 [hellomutou@gmail.com] 全目录 ...
+  -> [hellomutou@gmail.com] 读取完成，共拉取 7 封。
+\n[完毕] 成功应用回复匹配状态机，共写入 23 条记录。\n
+[2026-10-02 13:15:37] 开始读取邮箱 [jeepmutou@gmail.com] 全目录 ...
+  -> [jeepmutou@gmail.com] 读取完成，共拉取 20 封。
+
+[2026-10-02 13:15:38] 开始读取邮箱 [hellomutou@gmail.com] 全目录 ...
+  -> [hellomutou@gmail.com] 读取完成，共拉取 7 封。
+\n[完毕] 成功应用回复匹配状态机，共写入 23 条记录。\n
+[2026-10-02 13:16:45] 开始读取邮箱 [jeepmutou@gmail.com] 全目录 ...
+  -> [jeepmutou@gmail.com] 读取完成，共拉取 20 封。
+
+[2026-10-02 13:16:46] 开始读取邮箱 [hellomutou@gmail.com] 全目录 ...
+  -> [hellomutou@gmail.com] 读取完成，共拉取 7 封。
+\n[完毕] 成功应用回复匹配状态机，共写入 23 条记录。\n
+[2026-10-02 13:17:54] 开始读取邮箱 [jeepmutou@gmail.com] 全目录 ...
+  -> [jeepmutou@gmail.com] 读取完成，共拉取 20 封。
+
+[2026-10-02 13:17:55] 开始读取邮箱 [hellomutou@gmail.com] 全目录 ...
+  -> [hellomutou@gmail.com] 读取完成，共拉取 7 封。
+\n[完毕] 成功应用回复匹配状态机，共写入 23 条记录。\n
+[2026-10-02 13:18:56] 开始读取邮箱 [jeepmutou@gmail.com] 全目录 ...
+  -> [jeepmutou@gmail.com] 读取完成，共拉取 20 封。
+
+[2026-10-02 13:18:56] 开始读取邮箱 [hellomutou@gmail.com] 全目录 ...
+  -> [hellomutou@gmail.com] 读取完成，共拉取 7 封。
+\n[完毕] 成功应用回复匹配状态机，共写入 23 条记录。\n
+[2026-10-02 13:20:40] 开始读取邮箱 [jeepmutou@gmail.com] 全目录 ...
+  -> [jeepmutou@gmail.com] 读取完成，共拉取 20 封。
+
+[2026-10-02 13:20:40] 开始读取邮箱 [hellomutou@gmail.com] 全目录 ...
+  -> [hellomutou@gmail.com] 读取完成，共拉取 7 封。
+\n[完毕] 成功应用回复匹配状态机，共写入 23 条记录。\n
+[2026-10-02 13:37:55] 开始读取邮箱 [jeepmutou@gmail.com] 全目录 ...
+  -> [jeepmutou@gmail.com] 读取完成，共拉取 20 封。
+
+[2026-10-02 13:37:55] 开始读取邮箱 [hellomutou@gmail.com] 全目录 ...
+  -> [hellomutou@gmail.com] 读取完成，共拉取 7 封。
+\n[完毕] 成功应用回复匹配状态机，共写入 23 条记录。\n
+[2026-10-02 13:38:06] 开始读取邮箱 [jeepmutou@gmail.com] 全目录 ...
+  -> [jeepmutou@gmail.com] 读取完成，共拉取 20 封。
+
+[2026-10-02 13:38:07] 开始读取邮箱 [hellomutou@gmail.com] 全目录 ...
+  -> [hellomutou@gmail.com] 读取完成，共拉取 7 封。
+\n[完毕] 成功应用回复匹配状态机，共写入 23 条记录。\n
+[2026-10-02 13:38:37] 开始读取邮箱 [jeepmutou@gmail.com] 全目录 ...
+  -> [jeepmutou@gmail.com] 读取完成，共拉取 20 封。
+
+[2026-10-02 13:38:37] 开始读取邮箱 [hellomutou@gmail.com] 全目录 ...
+  -> [hellomutou@gmail.com] 读取完成，共拉取 7 封。
+\n[完毕] 成功应用回复匹配状态机，共写入 23 条记录。\n
+[2026-10-02 13:41:26] 开始读取邮箱 [jeepmutou@gmail.com] 全目录 ...
+  -> [jeepmutou@gmail.com] 读取完成，共拉取 20 封。
+
+[2026-10-02 13:41:27] 开始读取邮箱 [hellomutou@gmail.com] 全目录 ...
+  -> [hellomutou@gmail.com] 读取完成，共拉取 7 封。
+\n[完毕] 成功应用回复匹配状态机，共写入 23 条记录。\n
+[2026-10-02 14:00:31] 开始读取邮箱 [jeepmutou@gmail.com] 全目录 ...
+  -> [jeepmutou@gmail.com] 读取完成，共拉取 20 封。
+
+[2026-10-02 14:00:32] 开始读取邮箱 [hellomutou@gmail.com] 全目录 ...
+  -> [hellomutou@gmail.com] 读取完成，共拉取 7 封。
+\n[完毕] 成功应用回复匹配状态机，共写入 23 条记录。\n
+[2026-10-02 15:05:58] 开始读取邮箱 [jeepmutou@gmail.com] 全目录 ...
+  -> [jeepmutou@gmail.com] 读取完成，共拉取 20 封。
+
+[2026-10-02 15:05:59] 开始读取邮箱 [hellomutou@gmail.com] 全目录 ...
+  -> [hellomutou@gmail.com] 读取完成，共拉取 7 封。
+\n[完毕] 成功应用回复匹配状态机，共写入 23 条记录。\n
+[2026-10-02 15:06:05] 开始读取邮箱 [jeepmutou@gmail.com] 全目录 ...
+  -> [jeepmutou@gmail.com] 读取完成，共拉取 20 封。
+
+[2026-10-02 15:06:06] 开始读取邮箱 [hellomutou@gmail.com] 全目录 ...
+  -> [hellomutou@gmail.com] 读取完成，共拉取 7 封。
+\n[完毕] 成功应用回复匹配状态机，共写入 23 条记录。\n
+[2026-10-02 15:06:17] 开始读取邮箱 [jeepmutou@gmail.com] 全目录 ...
+  -> [jeepmutou@gmail.com] 读取完成，共拉取 20 封。
+
+[2026-10-02 15:06:17] 开始读取邮箱 [hellomutou@gmail.com] 全目录 ...
+  -> [hellomutou@gmail.com] 读取完成，共拉取 7 封。
+\n[完毕] 成功应用回复匹配状态机，共写入 23 条记录。\n
+[2026-10-02 15:16:44] 开始读取邮箱 [jeepmutou@gmail.com] 全目录 ...
+  -> [jeepmutou@gmail.com] 读取完成，共拉取 20 封。
+
+[2026-10-02 15:16:44] 开始读取邮箱 [hellomutou@gmail.com] 全目录 ...
+  -> [hellomutou@gmail.com] 读取完成，共拉取 7 封。
+\n[完毕] 成功应用回复匹配状态机，共写入 23 条记录。\n

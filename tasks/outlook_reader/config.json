@@ -1,23 +1,23 @@
 {
-    "schedule_type": "weekly",
+    "params": {
+        "past_hours": 48,
+        "no_response_threshold": 36000,
+        "max_emails": 500,
+        "retention_hours": 720,
+        "lang": "en"
+    },
+    "schedule_type": "interval",
     "interval_seconds": 60,
     "weekly_schedule": {
-        "days": [],
+        "days": [
+            "mon",
+            "thu"
+        ],
         "times": [
-            "00:00",
-            "01:00"
+            "00:00"
         ]
     },
-    "params": {
-        "target_account": [
-            "jiayunpeng1@huawei.com"
-        ],
-        "exclude_emails": [
-            "huawei.com"
-        ],
-        "past_hours": 24,
-        "max_emails": 500,
-        "retention_hours": 720
-    },
+    "timeout_enabled": true,
+    "timeout_minutes": 10,
     "enabled": false
 }

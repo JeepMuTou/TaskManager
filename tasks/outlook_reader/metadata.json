@@ -1,0 +1,10 @@
+{
+    "name": {
+        "zh": "读取 Outlook 邮件并导出",
+        "en": "Read Outlook Emails to Excel"
+    },
+    "description": {
+        "zh": "读取本地 Outlook 指定邮箱全文件夹的邮件，判断收发，并增量记录到 Excel 表格中。",
+        "en": "Reads emails from all folders of specified local Outlook accounts, determines send/receive direction, and incrementally logs them into an Excel spreadsheet."
+    }
+}
