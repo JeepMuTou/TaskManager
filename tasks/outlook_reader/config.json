@@ -1,0 +1,23 @@
+{
+    "params": {
+        "past_hours": 48,
+        "no_response_threshold": 36000,
+        "max_emails": 500,
+        "retention_hours": 720,
+        "lang": "en"
+    },
+    "schedule_type": "interval",
+    "interval_seconds": 60,
+    "weekly_schedule": {
+        "days": [
+            "mon",
+            "thu"
+        ],
+        "times": [
+            "00:00"
+        ]
+    },
+    "timeout_enabled": true,
+    "timeout_minutes": 10,
+    "enabled": false
+}
