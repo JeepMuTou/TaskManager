@@ -1,0 +1,10 @@
+{
+    "name": {
+        "zh": "运动提醒",
+        "en": "Exercise Reminder"
+    },
+    "description": {
+        "zh": "定时弹出置顶弹窗，提醒您起身运动、活动筋骨或休息放松。",
+        "en": "Pops up a topmost reminder window to remind you to take a break and exercise."
+    }
+}

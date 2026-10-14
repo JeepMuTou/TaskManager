@@ -1,0 +1,40 @@
+{
+    "params": {
+        "title": "运动提醒",
+        "content": "该去运动啦！站起来活动一下身体，伸展筋骨，保护颈椎与视力！",
+        "sound": true,
+        "snooze": true,
+        "auto_close_seconds": 0,
+        "lang": "zh"
+    },
+    "schedule_type": "interval",
+    "interval_seconds": 3600,
+    "weekly_schedule": {
+        "days": [
+            "mon",
+            "tue",
+            "wed",
+            "thu",
+            "fri"
+        ],
+        "times": [
+            "10:30",
+            "15:30"
+        ]
+    },
+    "timeout_enabled": false,
+    "timeout_minutes": 10,
+    "enabled": false,
+    "interval_days": [
+        "mon",
+        "tue",
+        "wed",
+        "thu",
+        "fri",
+        "sat",
+        "sun"
+    ],
+    "time_range_enabled": false,
+    "time_range_start": "09:00",
+    "time_range_end": "17:00"
+}
