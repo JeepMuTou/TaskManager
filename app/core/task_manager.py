@@ -6,7 +6,100 @@ import threading
 import queue
 import time
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Set
+
+RUN_BAT_TEMPLATE = """@echo off
+setlocal
+chcp 65001 >nul
+
+REM 1. Check PYTHON_EXE from environment
+if not "%PYTHON_EXE%"=="" goto RUN
+
+REM 2. Check portable env or virtual env
+set "ROOT_DIR=%~dp0..\\.."
+if exist "%ROOT_DIR%\\python_env\\python.exe" (
+    set "PYTHON_EXE=%ROOT_DIR%\\python_env\\python.exe"
+) else if exist "%ROOT_DIR%\\env\\Scripts\\python.exe" (
+    set "PYTHON_EXE=%ROOT_DIR%\\env\\Scripts\\python.exe"
+) else if exist "%ROOT_DIR%\\.venv\\Scripts\\python.exe" (
+    set "PYTHON_EXE=%ROOT_DIR%\\.venv\\Scripts\\python.exe"
+) else (
+    set "PYTHON_EXE=python"
+)
+
+:RUN
+cd /d "%~dp0"
+"%PYTHON_EXE%" run.py %*
+exit /b %ERRORLEVEL%
+"""
+
+def _get_process_children(parent_pid: int) -> List[int]:
+    """获取指定 PID 的所有子代/后代进程 PID (Windows Toolhelp32Snapshot)"""
+    if sys.platform != "win32" or parent_pid <= 0:
+        return []
+    children = []
+    try:
+        import ctypes
+        from ctypes import wintypes
+        class PROCESSENTRY32(ctypes.Structure):
+            _fields_ = [
+                ('dwSize', wintypes.DWORD),
+                ('cntUsage', wintypes.DWORD),
+                ('th32ProcessID', wintypes.DWORD),
+                ('th32DefaultHeapID', ctypes.c_size_t),
+                ('th32ModuleID', wintypes.DWORD),
+                ('cntThreads', wintypes.DWORD),
+                ('th32ParentProcessID', wintypes.DWORD),
+                ('pcPriClassBase', wintypes.LONG),
+                ('dwFlags', wintypes.DWORD),
+                ('szExeFile', ctypes.c_char * 260)
+            ]
+        k32 = ctypes.windll.kernel32
+        hSnapshot = k32.CreateToolhelp32Snapshot(0x00000002, 0)
+        if hSnapshot in (-1, 0):
+            return []
+        pe = PROCESSENTRY32()
+        pe.dwSize = ctypes.sizeof(PROCESSENTRY32)
+        all_procs = []
+        if k32.Process32First(hSnapshot, ctypes.byref(pe)):
+            while True:
+                all_procs.append((pe.th32ProcessID, pe.th32ParentProcessID))
+                if not k32.Process32Next(hSnapshot, ctypes.byref(pe)):
+                    break
+        k32.CloseHandle(hSnapshot)
+
+        queue_pids = [parent_pid]
+        while queue_pids:
+            curr = queue_pids.pop(0)
+            for pid, ppid in all_procs:
+                if ppid == curr and pid not in children:
+                    children.append(pid)
+                    queue_pids.append(pid)
+    except Exception:
+        pass
+    return children
+
+def _is_pid_alive(pid: int) -> bool:
+    """检查 PID 对应的进程是否仍在运行"""
+    if sys.platform != "win32" or pid <= 0:
+        return False
+    try:
+        import ctypes
+        k32 = ctypes.windll.kernel32
+        PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+        SYNCHRONIZE = 0x00100000
+        handle = k32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | SYNCHRONIZE, False, pid)
+        if not handle:
+            return False
+        exit_code = ctypes.c_ulong()
+        STILL_ACTIVE = 259
+        alive = False
+        if k32.GetExitCodeProcess(handle, ctypes.byref(exit_code)):
+            alive = (exit_code.value == STILL_ACTIVE)
+        k32.CloseHandle(handle)
+        return alive
+    except Exception:
+        return False
 
 class TaskManager:
     def __init__(self, tasks_dir: str, settings_store):
@@ -37,10 +130,87 @@ class TaskManager:
             self._do_execute(task_id, params)
             self.task_queue.task_done()
 
+    def _is_task_running_internal(self, info: dict) -> bool:
+        proc = info.get("proc")
+        pid = info.get("pid", proc.pid if proc else None)
+        child_pids = info.setdefault("child_pids", set())
+
+        if pid is not None:
+            # 如果主进程 (cmd.exe) 仍在运行
+            if proc and proc.poll() is None:
+                # 动态刷新追踪到的子进程 (如 cmd 唤起的 python.exe)
+                for cpid in _get_process_children(pid):
+                    child_pids.add(cpid)
+                return True
+
+            # 如果主进程已退出，检查是否有残留未退出的子进程 (如后台 python.exe)
+            alive_children = set()
+            for cpid in list(child_pids):
+                if _is_pid_alive(cpid):
+                    alive_children.add(cpid)
+            info["child_pids"] = alive_children
+            return len(alive_children) > 0
+
+        return False
+
+    def _kill_task_process(self, info: dict):
+        proc = info.get("proc")
+        pid = info.get("pid", proc.pid if proc else None)
+        child_pids = info.setdefault("child_pids", set())
+
+        if pid is not None and sys.platform == "win32":
+            # 强杀前刷新子进程列表
+            for cpid in _get_process_children(pid):
+                child_pids.add(cpid)
+
+            # 1. 在 Windows 上优先使用 taskkill /F /T /PID 递归整棵进程树
+            try:
+                subprocess.run(
+                    ["taskkill", "/F", "/T", "/PID", str(pid)],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    creationflags=subprocess.CREATE_NO_WINDOW
+                )
+            except Exception as e:
+                print(f"taskkill failed on PID {pid}: {e}")
+
+        # 2. 如果 proc 仍未退出，执行 proc.kill()
+        if proc and proc.poll() is None:
+            try:
+                proc.kill()
+            except Exception:
+                pass
+
+        # 3. 针对记录过的每一个子进程 PID 进行二次确认与强杀，杜绝孤儿进程
+        if sys.platform == "win32":
+            import ctypes
+            k32 = ctypes.windll.kernel32
+            PROCESS_TERMINATE = 0x0001
+            for cpid in list(child_pids):
+                if _is_pid_alive(cpid):
+                    try:
+                        subprocess.run(
+                            ["taskkill", "/F", "/PID", str(cpid)],
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.DEVNULL,
+                            creationflags=subprocess.CREATE_NO_WINDOW
+                        )
+                    except Exception:
+                        pass
+                    try:
+                        h = k32.OpenProcess(PROCESS_TERMINATE, False, cpid)
+                        if h:
+                            k32.TerminateProcess(h, 1)
+                            k32.CloseHandle(h)
+                    except Exception:
+                        pass
+
+        info["child_pids"] = set()
+
     def _cleanup_dead_processes(self):
         dead = []
-        for tid, info in self.running_processes.items():
-            if info["proc"].poll() is not None:
+        for tid, info in list(self.running_processes.items()):
+            if not self._is_task_running_internal(info):
                 dead.append(tid)
         for tid in dead:
             del self.running_processes[tid]
@@ -50,15 +220,13 @@ class TaskManager:
             try:
                 now = time.time()
                 killed = []
-                # 遍历拷贝避免修改期间迭代冲突
                 for tid, info in list(self.running_processes.items()):
                     if info["timeout_seconds"] > 0:
                         elapsed = now - info["start_time"]
                         if elapsed > info["timeout_seconds"]:
-                            proc = info["proc"]
-                            if proc.poll() is None:
+                            if self._is_task_running_internal(info):
                                 try:
-                                    proc.kill()
+                                    self._kill_task_process(info)
                                     print(f"Task {tid} killed due to timeout (> {info['timeout_seconds']}s)")
                                 except Exception as e:
                                     print(f"Failed to kill timed-out task {tid}: {e}")
@@ -131,10 +299,21 @@ class TaskManager:
 
     def _do_execute(self, task_id: str, params: dict = None):
         task_dir = self.tasks_dir / task_id
-        script_path = task_dir / "run.py"
-        if not script_path.exists():
-            print(f"Task script not found: {script_path}")
-            return
+        bat_path = task_dir / "run.bat"
+        py_path = task_dir / "run.py"
+
+        # 如果任务目录下没有 run.bat，但存在 run.py，则自动生成标准 run.bat
+        if not bat_path.exists():
+            if py_path.exists():
+                try:
+                    with open(bat_path, "w", encoding="utf-8") as f:
+                        f.write(RUN_BAT_TEMPLATE)
+                    print(f"Auto-generated run.bat for task: {task_id}")
+                except Exception as e:
+                    print(f"Failed to auto-generate run.bat for task {task_id}: {e}")
+            else:
+                print(f"Task entry script not found: {bat_path} / {py_path}")
+                return
 
         config_path = task_dir / "config.json"
         # 默认开启超时强杀，时间为10分钟
@@ -153,18 +332,28 @@ class TaskManager:
         try:
             python_exe = self._get_python_exe()
             creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
+            env = os.environ.copy()
+            env["PYTHON_EXE"] = python_exe
+
+            if bat_path.exists():
+                cmd = ["cmd.exe", "/c", str(bat_path)]
+            else:
+                cmd = [python_exe, "run.py"]
 
             proc = subprocess.Popen(
-                [python_exe, "run.py"],
+                cmd,
                 cwd=str(task_dir),
-                creationflags=creationflags
+                creationflags=creationflags,
+                env=env
             )
             self.running_processes[task_id] = {
                 "proc": proc,
+                "pid": proc.pid,
+                "child_pids": set(),
                 "start_time": time.time(),
                 "timeout_seconds": timeout_seconds
             }
-            print(f"Started task: {task_id}")
+            print(f"Started task: {task_id} via bat (PID: {proc.pid})")
         except Exception as e:
             print(f"Failed to start task {task_id}: {e}")
 
@@ -189,31 +378,45 @@ class TaskManager:
                 new_queue.put(item)
         self.task_queue = new_queue
 
-        # 2. 如果已经运行，直接杀死进程
+        # 2. 如果已经运行，直接杀死整棵进程树与所有派生子进程
         info = self.running_processes.get(task_id)
         if info is not None:
-            proc = info["proc"]
-            if proc.poll() is None:
-                try:
-                    proc.kill()
-                    print(f"Killed task: {task_id}")
-                except Exception as e:
-                    print(f"Failed to kill task {task_id}: {e}")
+            self._kill_task_process(info)
+            print(f"Killed task: {task_id}")
             if task_id in self.running_processes:
                 del self.running_processes[task_id]
 
     def open_task_config(self, task_id: str):
         task_dir = self.tasks_dir / task_id
+        bat_path = task_dir / "config_ui.bat"
         script_path = task_dir / "config_ui.py"
+
+        python_exe = self._get_python_exe()
+        env = os.environ.copy()
+        env["PYTHON_EXE"] = python_exe
+
+        if bat_path.exists():
+            try:
+                proc = subprocess.Popen(
+                    ["cmd.exe", "/c", str(bat_path)],
+                    cwd=str(task_dir),
+                    env=env
+                )
+                self.config_processes[task_id] = proc
+                print(f"Opened config UI via bat for task: {task_id}")
+                return
+            except Exception as e:
+                print(f"Failed to open config UI via bat for task {task_id}: {e}")
+
         if not script_path.exists():
             print(f"Config UI script not found: {script_path}")
             return
 
         try:
-            python_exe = self._get_python_exe()
             proc = subprocess.Popen(
                 [python_exe, "config_ui.py"],
-                cwd=str(task_dir)
+                cwd=str(task_dir),
+                env=env
             )
             self.config_processes[task_id] = proc
             print(f"Opened config UI for task: {task_id}")

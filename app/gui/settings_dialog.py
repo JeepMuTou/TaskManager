@@ -14,7 +14,7 @@ class SettingsDialog(QDialog):
         self.lang = settings_store.language
         
         self.setWindowTitle(tr("settings_title", self.lang))
-        self.setFixedSize(400, 285)
+        self.setFixedSize(400, 365)
         self.setStyleSheet("QDialog { background-color: #f5f6fa; }")
         
         layout = QVBoxLayout(self)
@@ -92,6 +92,33 @@ class SettingsDialog(QDialog):
         parallel_row.addWidget(self.switch_parallel)
         card_layout.addLayout(parallel_row)
         
+        # 5. 自动检查更新
+        update_row = QHBoxLayout()
+        self.lbl_update = QLabel(tr("settings_auto_update", self.lang))
+        self.lbl_update.setStyleSheet("font-weight: bold; font-size: 13px; color: #2f3640;")
+        self.switch_update = IOSSwitch()
+        self.switch_update.setChecked(settings_store.auto_update)
+        if settings_store.auto_update:
+            self.switch_update._position = 1.0
+        update_row.addWidget(self.lbl_update)
+        update_row.addStretch()
+        update_row.addWidget(self.switch_update)
+        card_layout.addLayout(update_row)
+        
+        # 6. 版本信息
+        version_row = QHBoxLayout()
+        self.lbl_version_title = QLabel(tr("settings_version", self.lang))
+        self.lbl_version_title.setStyleSheet("font-weight: bold; font-size: 13px; color: #2f3640;")
+        
+        current_version = self.settings_store.get_version()
+        self.lbl_version_val = QLabel(f"v{current_version}")
+        self.lbl_version_val.setStyleSheet("font-size: 13px; color: #718093; font-family: monospace;")
+        
+        version_row.addWidget(self.lbl_version_title)
+        version_row.addStretch()
+        version_row.addWidget(self.lbl_version_val)
+        card_layout.addLayout(version_row)
+
         layout.addWidget(card)
         
         # --- Buttons ---
@@ -100,11 +127,20 @@ class SettingsDialog(QDialog):
         self.btn_auto_fix = QPushButton(tr("settings_auto_fix", self.lang))
         self.btn_auto_fix.setCursor(Qt.PointingHandCursor)
         self.btn_auto_fix.setStyleSheet("""
-            QPushButton { background-color: #f1f2f6; border: 1px solid #dcdde1; border-radius: 6px; padding: 8px 20px; font-weight: bold; color: #e1b12c;}
+            QPushButton { background-color: #f1f2f6; border: 1px solid #dcdde1; border-radius: 6px; padding: 8px 12px; font-weight: bold; color: #e1b12c;}
             QPushButton:hover { background-color: #dcdde1; }
         """)
         self.btn_auto_fix.clicked.connect(self.on_auto_fix_clicked)
         btn_layout.addWidget(self.btn_auto_fix)
+        
+        self.btn_check_update = QPushButton(tr("settings_check_update", self.lang))
+        self.btn_check_update.setCursor(Qt.PointingHandCursor)
+        self.btn_check_update.setStyleSheet("""
+            QPushButton { background-color: #f1f2f6; border: 1px solid #dcdde1; border-radius: 6px; padding: 8px 12px; font-weight: bold; color: #2ed573;}
+            QPushButton:hover { background-color: #dcdde1; }
+        """)
+        self.btn_check_update.clicked.connect(self.on_check_update_clicked)
+        btn_layout.addWidget(self.btn_check_update)
         
         btn_layout.addStretch()
         
@@ -154,6 +190,7 @@ class SettingsDialog(QDialog):
         self.settings_store.auto_start = self.switch_auto.isChecked()
         self.settings_store.minimize_to_tray = self.switch_tray.isChecked()
         self.settings_store.allow_parallel_tasks = self.switch_parallel.isChecked()
+        self.settings_store.auto_update = self.switch_update.isChecked()
         self.settings_store.save()
         self.settings_store.apply_auto_start()
         
@@ -163,6 +200,26 @@ class SettingsDialog(QDialog):
             tr("settings_saved_msg", self.settings_store.language)
         )
         self.accept()
+
+    def on_check_update_clicked(self):
+        from app.utils.update_manager import UpdateManager
+        self.btn_check_update.setEnabled(False)
+        self.btn_check_update.setText(tr("update_checking", self.lang))
+        self.repaint()
+        
+        has_update = UpdateManager.check_for_update()
+        
+        self.btn_check_update.setText(tr("settings_check_update", self.lang))
+        self.btn_check_update.setEnabled(True)
+        
+        if has_update is None:
+            QMessageBox.critical(self, tr("update_error_title", self.lang), tr("update_error_msg", self.lang))
+        elif has_update:
+            reply = QMessageBox.question(self, tr("update_available_title", self.lang), tr("update_available_msg", self.lang), QMessageBox.Yes | QMessageBox.No)
+            if reply == QMessageBox.Yes:
+                UpdateManager.start_update()
+        else:
+            QMessageBox.information(self, tr("update_no_title", self.lang), tr("update_no_msg", self.lang))
 
     def on_auto_fix_clicked(self):
         from app.core.env_manager import EnvManager
@@ -176,18 +233,20 @@ class SettingsDialog(QDialog):
         self.btn_auto_fix.setText("Checking...")
         self.repaint()
         
-        is_ok, missing_python, missing_libs = env_mgr.check_env()
+        results = env_mgr.check_all_tasks()
         
         self.btn_auto_fix.setText(tr("settings_auto_fix", self.lang))
         self.btn_auto_fix.setEnabled(True)
         
-        if is_ok:
+        failed_tasks = [tid for tid, (ok, _) in results.items() if not ok]
+        
+        if not failed_tasks:
             QMessageBox.information(self, "OK", tr("env_ok", self.lang))
         else:
-            libs_str = "\n".join([f"- {lib}" for lib in missing_libs]) if missing_libs else ""
-            msg = tr("env_missing", self.lang).replace("{libs}", libs_str)
+            tasks_str = "\n".join([f"- {tid}" for tid in failed_tasks])
+            msg = tr("env_missing", self.lang).replace("{tasks}", tasks_str)
             
             reply = QMessageBox.question(self, "Warning", msg, QMessageBox.Yes | QMessageBox.No)
             if reply == QMessageBox.Yes:
-                env_mgr.start_auto_fix()
-                QMessageBox.information(self, "Fixing", tr("env_fixing", self.lang))
+                env_mgr.install_tasks_env(failed_tasks)
+                QMessageBox.information(self, tr("task_env_installing_title", self.lang), tr("env_fixing", self.lang))

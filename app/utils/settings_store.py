@@ -10,7 +10,9 @@ class SettingsStore:
         "language": "zh",
         "auto_start": False,
         "minimize_to_tray": False,
-        "allow_parallel_tasks": False
+        "allow_parallel_tasks": False,
+        "auto_update": True,
+        "last_update_check_date": ""
     }
     
     def __init__(self, data_dir: str):
@@ -76,6 +78,42 @@ class SettingsStore:
     @allow_parallel_tasks.setter
     def allow_parallel_tasks(self, val: bool):
         self._settings["allow_parallel_tasks"] = val
+
+    @property
+    def auto_update(self) -> bool:
+        return self._settings.get("auto_update", True)
+    
+    @auto_update.setter
+    def auto_update(self, val: bool):
+        self._settings["auto_update"] = val
+
+    @property
+    def last_update_check_date(self) -> str:
+        return self._settings.get("last_update_check_date", "")
+    
+    @last_update_check_date.setter
+    def last_update_check_date(self, val: str):
+        self._settings["last_update_check_date"] = val
+
+    # --- 版本信息 ---
+    def get_version(self) -> str:
+        version_file = self.data_dir / "version.json"
+        if version_file.exists():
+            try:
+                with open(version_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    return data.get("version", "0.0.99")
+            except Exception:
+                pass
+        
+        # If not exists or error, create it with default version
+        default_version = "0.0.99"
+        try:
+            with open(version_file, 'w', encoding='utf-8') as f:
+                json.dump({"version": default_version}, f, indent=4)
+        except Exception as e:
+            print(f"Failed to write version.json: {e}")
+        return default_version
 
     # --- 开机自启 (Windows Registry) ---
     def apply_auto_start(self):

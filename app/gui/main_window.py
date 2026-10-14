@@ -161,6 +161,39 @@ class MainWindow(QMainWindow):
         self.status_timer = QTimer(self)
         self.status_timer.timeout.connect(self.update_task_status)
         self.status_timer.start(1000)
+        
+        self.update_check_timer = QTimer(self)
+        self.update_check_timer.timeout.connect(self.check_auto_update_silently)
+        self.update_check_timer.start(3600000) # Check every hour
+        
+        QTimer.singleShot(1000, self.check_auto_update_silently)
+        
+    def check_auto_update_silently(self):
+        if not self.settings_store.auto_update:
+            return
+            
+        import datetime
+        from app.utils.update_manager import UpdateManager
+        
+        today_str = datetime.date.today().strftime("%Y-%m-%d")
+        if self.settings_store.last_update_check_date == today_str:
+            return
+            
+        has_update = UpdateManager.check_for_update()
+        if has_update is not None:
+            self.settings_store.last_update_check_date = today_str
+            self.settings_store.save()
+            
+        if has_update:
+            reply = QMessageBox.question(
+                self, 
+                tr("update_available_title", self.lang), 
+                tr("update_available_msg", self.lang), 
+                QMessageBox.Yes | QMessageBox.No
+            )
+            if reply == QMessageBox.Yes:
+                UpdateManager.start_update()
+
     
     def setup_tray_icon(self):
         """初始化系统托盘图标"""
@@ -284,6 +317,14 @@ class MainWindow(QMainWindow):
         lbl_schedule_title = QLabel(tr("schedule_title", self.lang))
         lbl_schedule_title.setStyleSheet("font-weight: bold; font-size: 14px; color: #2f3640;")
         
+        self.btn_check_task_env = QPushButton(tr("btn_task_env", self.lang))
+        self.btn_check_task_env.setCursor(Qt.PointingHandCursor)
+        self.btn_check_task_env.setStyleSheet("""
+            QPushButton { background-color: #2ed573; color: white; border-radius: 4px; padding: 5px 12px; font-weight: bold;}
+            QPushButton:hover { background-color: #26af5f; }
+        """)
+        self.btn_check_task_env.clicked.connect(self.on_check_task_env_clicked)
+        
         self.btn_configure_task = QPushButton(tr("btn_task_config", self.lang))
         self.btn_configure_task.setCursor(Qt.PointingHandCursor)
         self.btn_configure_task.setStyleSheet("""
@@ -294,6 +335,7 @@ class MainWindow(QMainWindow):
         
         schedule_title_layout.addWidget(lbl_schedule_title)
         schedule_title_layout.addStretch()
+        schedule_title_layout.addWidget(self.btn_check_task_env)
         schedule_title_layout.addWidget(self.btn_configure_task)
         schedule_layout.addLayout(schedule_title_layout)
         
@@ -311,27 +353,7 @@ class MainWindow(QMainWindow):
         
         self.schedule_stack = QStackedWidget()
         
-        # 2.1 间隔面板
-        panel_interval = QWidget()
-        pi_layout = QHBoxLayout(panel_interval)
-        pi_layout.setContentsMargins(0, 10, 0, 0)
-        pi_layout.addWidget(QLabel(tr("interval_label", self.lang)))
-        self.spin_interval = QSpinBox()
-        self.spin_interval.setRange(1, 86400 * 30)
-        self.spin_interval.setValue(60)
-        self.spin_interval.setStyleSheet("padding: 5px; border: 1px solid #ccc; border-radius: 4px;")
-        pi_layout.addWidget(self.spin_interval)
-        pi_layout.addStretch()
-        self.schedule_stack.addWidget(panel_interval)
-        
-        # 2.2 每周面板
-        panel_weekly = QWidget()
-        pw_layout = QVBoxLayout(panel_weekly)
-        pw_layout.setContentsMargins(0, 10, 0, 0)
-        pw_layout.setSpacing(10)
-        
-        days_layout = QHBoxLayout()
-        self.day_checkboxes = {}
+        # 共享的星期映射和按钮样式
         days_map = [(tr("day_mon", self.lang), "mon"), (tr("day_tue", self.lang), "tue"), 
                     (tr("day_wed", self.lang), "wed"), (tr("day_thu", self.lang), "thu"),
                     (tr("day_fri", self.lang), "fri"), (tr("day_sat", self.lang), "sat"), 
@@ -349,6 +371,80 @@ class MainWindow(QMainWindow):
             QPushButton:hover { background-color: #eccc68; color: #fff; border-color: #eccc68; }
             QPushButton:checked { background-color: #3742fa; color: white; border-color: #3742fa; }
         """
+
+        # 2.1 间隔面板
+        panel_interval = QWidget()
+        pi_layout = QVBoxLayout(panel_interval)
+        pi_layout.setContentsMargins(0, 10, 0, 0)
+        pi_layout.setSpacing(10)
+
+        interval_days_layout = QHBoxLayout()
+        self.interval_day_checkboxes = {}
+        for text, val in days_map:
+            btn = QPushButton(text)
+            btn.setCheckable(True)
+            btn.setStyleSheet(chip_qss)
+            btn.setCursor(Qt.PointingHandCursor)
+            self.interval_day_checkboxes[val] = btn
+            interval_days_layout.addWidget(btn)
+        interval_days_layout.addStretch()
+        pi_layout.addLayout(interval_days_layout)
+
+        interval_input_layout = QHBoxLayout()
+        lbl_interval = QLabel(tr("interval_label", self.lang))
+        lbl_interval.setStyleSheet("color: #718093; font-weight: bold;")
+        interval_input_layout.addWidget(lbl_interval)
+        self.spin_interval = QSpinBox()
+        self.spin_interval.setRange(1, 86400 * 30)
+        self.spin_interval.setValue(60)
+        self.spin_interval.setStyleSheet("padding: 5px; border: 1px solid #ccc; border-radius: 4px;")
+        interval_input_layout.addWidget(self.spin_interval)
+        interval_input_layout.addStretch()
+        pi_layout.addLayout(interval_input_layout)
+
+        interval_range_layout = QHBoxLayout()
+        self.chk_time_range = QCheckBox(tr("time_range_enable", self.lang))
+        self.time_range_start = QTimeEdit()
+        self.time_range_start.setDisplayFormat("HH:mm")
+        self.time_range_start.setTime(QTime(9, 0))
+        self.time_range_start.setStyleSheet("padding: 4px; border: 1px solid #dcdde1; border-radius: 4px;")
+        
+        self.lbl_time_range_sep = QLabel("~")
+        self.lbl_time_range_sep.setStyleSheet("font-weight: bold; color: #2f3640;")
+        
+        self.time_range_end = QTimeEdit()
+        self.time_range_end.setDisplayFormat("HH:mm")
+        self.time_range_end.setTime(QTime(17, 0))
+        self.time_range_end.setStyleSheet("padding: 4px; border: 1px solid #dcdde1; border-radius: 4px;")
+        
+        def on_time_range_toggled(checked):
+            self.time_range_start.setEnabled(checked)
+            self.time_range_end.setEnabled(checked)
+            color = "#2f3640" if checked else "#a4b0be"
+            self.chk_time_range.setStyleSheet(f"color: {color};")
+            self.lbl_time_range_sep.setStyleSheet(f"color: {color};")
+            
+        self.chk_time_range.toggled.connect(on_time_range_toggled)
+        self.chk_time_range.setChecked(False)
+        on_time_range_toggled(False)
+        
+        interval_range_layout.addWidget(self.chk_time_range)
+        interval_range_layout.addWidget(self.time_range_start)
+        interval_range_layout.addWidget(self.lbl_time_range_sep)
+        interval_range_layout.addWidget(self.time_range_end)
+        interval_range_layout.addStretch()
+        pi_layout.addLayout(interval_range_layout)
+
+        self.schedule_stack.addWidget(panel_interval)
+        
+        # 2.2 每周面板
+        panel_weekly = QWidget()
+        pw_layout = QVBoxLayout(panel_weekly)
+        pw_layout.setContentsMargins(0, 10, 0, 0)
+        pw_layout.setSpacing(10)
+        
+        days_layout = QHBoxLayout()
+        self.day_checkboxes = {}
         for text, val in days_map:
             btn = QPushButton(text)
             btn.setCheckable(True)
@@ -634,6 +730,29 @@ class MainWindow(QMainWindow):
             
         self.spin_interval.setValue(config.get("interval_seconds", 60))
         
+        # 加载间隔调度的星期配置 (默认全选周一到周日)
+        interval_days = config.get("interval_days")
+        if interval_days is None:
+            interval_days = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+        for val, chk in self.interval_day_checkboxes.items():
+            chk.setChecked(val in interval_days)
+            
+        # 加载时间范围配置
+        time_range_enabled = config.get("time_range_enabled", False)
+        if "time_range" in config and isinstance(config["time_range"], dict):
+            time_range_enabled = config["time_range"].get("enabled", time_range_enabled)
+            start_str = config["time_range"].get("start", "09:00")
+            end_str = config["time_range"].get("end", "17:00")
+        else:
+            start_str = config.get("time_range_start", "09:00")
+            end_str = config.get("time_range_end", "17:00")
+            
+        self.chk_time_range.setChecked(time_range_enabled)
+        sh, sm = map(int, start_str.split(":")) if ":" in start_str else (9, 0)
+        eh, em = map(int, end_str.split(":")) if ":" in end_str else (17, 0)
+        self.time_range_start.setTime(QTime(sh, sm))
+        self.time_range_end.setTime(QTime(eh, em))
+            
         weekly_conf = config.get("weekly_schedule", {})
         saved_days = weekly_conf.get("days", [])
         for val, chk in self.day_checkboxes.items():
@@ -662,6 +781,45 @@ class MainWindow(QMainWindow):
             return
         self.task_manager.open_task_config(self.current_selected_task_id)
         
+    def on_check_task_env_clicked(self):
+        if not self.current_selected_task_id:
+            return
+            
+        from app.core.env_manager import EnvManager
+        tasks_dir = self.task_manager.tasks_dir
+        env_mgr = EnvManager(str(tasks_dir))
+        
+        self.btn_check_task_env.setEnabled(False)
+        self.btn_check_task_env.setText(tr("update_checking", self.lang))
+        self.repaint()
+        
+        is_ok, out = env_mgr.check_task_env(self.current_selected_task_id)
+        
+        self.btn_check_task_env.setText(tr("btn_task_env", self.lang))
+        self.btn_check_task_env.setEnabled(True)
+        
+        if is_ok:
+            QMessageBox.information(
+                self, 
+                tr("task_env_ok_title", self.lang), 
+                tr("task_env_ok_msg", self.lang)
+            )
+        else:
+            msg = tr("task_env_fail_msg", self.lang).replace("{detail}", out)
+            reply = QMessageBox.question(
+                self, 
+                tr("task_env_fail_title", self.lang), 
+                msg, 
+                QMessageBox.Yes | QMessageBox.No
+            )
+            if reply == QMessageBox.Yes:
+                env_mgr.install_task_env(self.current_selected_task_id)
+                QMessageBox.information(
+                    self, 
+                    tr("task_env_installing_title", self.lang), 
+                    tr("task_env_installing_msg", self.lang)
+                )
+        
     def on_save_clicked(self):
         if not self.current_selected_task_id:
             return
@@ -674,6 +832,16 @@ class MainWindow(QMainWindow):
             config["schedule_type"] = "interval"
             
         config["interval_seconds"] = self.spin_interval.value()
+        
+        selected_interval_days = []
+        for val, chk in self.interval_day_checkboxes.items():
+            if chk.isChecked():
+                selected_interval_days.append(val)
+        config["interval_days"] = selected_interval_days
+        
+        config["time_range_enabled"] = self.chk_time_range.isChecked()
+        config["time_range_start"] = self.time_range_start.time().toString("HH:mm")
+        config["time_range_end"] = self.time_range_end.time().toString("HH:mm")
         
         selected_days = []
         for val, chk in self.day_checkboxes.items():
@@ -705,6 +873,7 @@ class MainWindow(QMainWindow):
     def on_run_now_clicked(self):
         if not self.current_selected_task_id:
             return
+        self.check_auto_update_silently()
         # Run without passing explicit params. Run.py reads them itself.
         self.task_manager.execute_task(self.current_selected_task_id)
         self.update_task_status()

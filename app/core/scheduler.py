@@ -7,6 +7,33 @@ class SchedulerManager:
         self.task_executor = task_executor
         self.scheduler.start()
 
+    def _run_interval_task(self, task_id: str, params: dict, days: list, time_range: dict = None):
+        """执行间隔任务前检查今天是否在启用的星期列表中，以及是否在允许的时间范围内"""
+        import datetime
+        now = datetime.datetime.now()
+        
+        # 1. 检查星期
+        weekday_map = {0: "mon", 1: "tue", 2: "wed", 3: "thu", 4: "fri", 5: "sat", 6: "sun"}
+        today_str = weekday_map[now.weekday()]
+        if days and today_str not in days:
+            return
+
+        # 2. 检查时间范围 (若启用)
+        if time_range and time_range.get("enabled", False):
+            start_str = time_range.get("start", "00:00")
+            end_str = time_range.get("end", "23:59")
+            current_hm = now.strftime("%H:%M")
+            
+            if start_str <= end_str:
+                if not (start_str <= current_hm <= end_str):
+                    return
+            else:
+                # 跨午夜场景，如 22:00 ~ 06:00
+                if not (current_hm >= start_str or current_hm <= end_str):
+                    return
+
+        self.task_executor(task_id, params)
+
     def schedule_task(self, task_id: str, config: dict):
         """安排一个任务执行"""
         self.remove_task(task_id)
@@ -20,16 +47,37 @@ class SchedulerManager:
         try:
             if schedule_type == "interval":
                 interval_seconds = config.get("interval_seconds", 60)
+                days = config.get("interval_days", ["mon", "tue", "wed", "thu", "fri", "sat", "sun"])
+                if not days:
+                    print(f"任务 {task_id} (间隔) 缺少日期配置，无法调度。")
+                    return
+                    
+                time_range_enabled = config.get("time_range_enabled", False)
+                if "time_range" in config and isinstance(config["time_range"], dict):
+                    time_range_enabled = config["time_range"].get("enabled", time_range_enabled)
+                    start_str = config["time_range"].get("start", "09:00")
+                    end_str = config["time_range"].get("end", "17:00")
+                else:
+                    start_str = config.get("time_range_start", "09:00")
+                    end_str = config.get("time_range_end", "17:00")
+                    
+                time_range = {
+                    "enabled": time_range_enabled,
+                    "start": start_str,
+                    "end": end_str
+                }
+
                 job_id = f"job_{task_id}_0"
                 self.scheduler.add_job(
-                    self.task_executor,
+                    self._run_interval_task,
                     'interval',
                     seconds=interval_seconds,
-                    args=[task_id, params],
+                    args=[task_id, params, days, time_range],
                     id=job_id,
                     replace_existing=True
                 )
-                print(f"任务 {task_id} (间隔) 已加入调度，周期: {interval_seconds} 秒")
+                range_info = f"，生效时段: {start_str}~{end_str}" if time_range_enabled else ""
+                print(f"任务 {task_id} (间隔) 已加入调度，周期: {interval_seconds} 秒，生效星期: {','.join(days)}{range_info}")
                 
             elif schedule_type == "weekly":
                 weekly_schedule = config.get("weekly_schedule", {})
